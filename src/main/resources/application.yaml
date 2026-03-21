@@ -13,5 +13,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+jwt:
+  secret: "clave-super-secreta-larga-para-jwt-minimo-32-caracteres"
+  expiration: 86400000
+
 server:
   port: 8080
