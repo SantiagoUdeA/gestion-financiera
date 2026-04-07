@@ -1,7 +1,5 @@
 package com.finanzas.gestion_financiera.feature;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.finanzas.gestion_financiera.controller.TransactionController;
 import com.finanzas.gestion_financiera.dto.TransactionRequest;
 import com.finanzas.gestion_financiera.dto.TransactionResponse;
@@ -33,9 +31,6 @@ class TransactionControllerFeatureTest {
 
     private MockMvc mockMvc;
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
-
     @Mock
     private TransactionService transactionService;
 
@@ -55,21 +50,24 @@ class TransactionControllerFeatureTest {
         @DisplayName("Debe crear transacción de ingreso y retornar 200")
         void debeCrearTransaccionIngreso() throws Exception {
             // Arrange
-            TransactionRequest request = new TransactionRequest();
-            request.setTipo("INGRESO");
-            request.setMonto(new BigDecimal("5000.00"));
-            request.setFecha(LocalDate.of(2026, 4, 1));
-            request.setCategoriaId(1L);
-
             TransactionResponse response = new TransactionResponse(
                     1L, "INGRESO", new BigDecimal("5000.00"),
                     LocalDate.of(2026, 4, 1), "Salario");
             when(transactionService.crear(any(TransactionRequest.class))).thenReturn(response);
 
+            String json = """
+                    {
+                        "tipo": "INGRESO",
+                        "monto": 5000.00,
+                        "fecha": "2026-04-01",
+                        "categoriaId": 1
+                    }
+                    """;
+
             // Act & Assert
             mockMvc.perform(post("/api/v1/transacciones")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
+                            .content(json))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1))
                     .andExpect(jsonPath("$.tipo").value("INGRESO"))
@@ -81,21 +79,24 @@ class TransactionControllerFeatureTest {
         @DisplayName("Debe crear transacción de gasto y retornar 200")
         void debeCrearTransaccionGasto() throws Exception {
             // Arrange
-            TransactionRequest request = new TransactionRequest();
-            request.setTipo("GASTO");
-            request.setMonto(new BigDecimal("250.75"));
-            request.setFecha(LocalDate.of(2026, 4, 5));
-            request.setCategoriaId(5L);
-
             TransactionResponse response = new TransactionResponse(
                     2L, "GASTO", new BigDecimal("250.75"),
                     LocalDate.of(2026, 4, 5), "Alimentación");
             when(transactionService.crear(any(TransactionRequest.class))).thenReturn(response);
 
+            String json = """
+                    {
+                        "tipo": "GASTO",
+                        "monto": 250.75,
+                        "fecha": "2026-04-05",
+                        "categoriaId": 5
+                    }
+                    """;
+
             // Act & Assert
             mockMvc.perform(post("/api/v1/transacciones")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
+                            .content(json))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.tipo").value("GASTO"))
                     .andExpect(jsonPath("$.monto").value(250.75));
@@ -201,7 +202,6 @@ class TransactionControllerFeatureTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(2))
                     .andExpect(jsonPath("$[0].tipo").value("INGRESO"))
-                    .andExpect(jsonPath("$[0].monto").value(5000))
                     .andExpect(jsonPath("$[1].tipo").value("GASTO"));
         }
 

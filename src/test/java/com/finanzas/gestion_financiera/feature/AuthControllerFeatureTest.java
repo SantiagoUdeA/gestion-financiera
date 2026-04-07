@@ -1,7 +1,6 @@
 package com.finanzas.gestion_financiera.feature;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.finanzas.gestion_financiera.controller.AuthController;
 import com.finanzas.gestion_financiera.dto.AuthResponse;
 import com.finanzas.gestion_financiera.dto.LoginRequest;
@@ -30,8 +29,7 @@ class AuthControllerFeatureTest {
 
     private MockMvc mockMvc;
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
     private AuthService authService;
