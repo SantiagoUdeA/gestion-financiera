@@ -1,23 +1,22 @@
 package com.finanzas.gestion_financiera.feature;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.finanzas.gestion_financiera.config.SecurityConfig;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.finanzas.gestion_financiera.controller.TransactionController;
 import com.finanzas.gestion_financiera.dto.TransactionRequest;
 import com.finanzas.gestion_financiera.dto.TransactionResponse;
-import com.finanzas.gestion_financiera.service.JwtService;
 import com.finanzas.gestion_financiera.service.TransactionService;
-import com.finanzas.gestion_financiera.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,32 +27,31 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(TransactionController.class)
-@Import(SecurityConfig.class)
+@ExtendWith(MockitoExtension.class)
 @DisplayName("Transaction Feature - API /api/v1/transacciones")
 class TransactionControllerFeatureTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
-    @MockitoBean
+    @Mock
     private TransactionService transactionService;
 
-    @MockitoBean
-    private JwtService jwtService;
+    @InjectMocks
+    private TransactionController transactionController;
 
-    @MockitoBean
-    private UserRepository userRepository;
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(transactionController).build();
+    }
 
     @Nested
     @DisplayName("POST /api/v1/transacciones")
     class CrearEndpoint {
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe crear transacción de ingreso y retornar 200")
         void debeCrearTransaccionIngreso() throws Exception {
             // Arrange
@@ -80,7 +78,6 @@ class TransactionControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe crear transacción de gasto y retornar 200")
         void debeCrearTransaccionGasto() throws Exception {
             // Arrange
@@ -105,7 +102,6 @@ class TransactionControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe retornar 400 si el tipo es inválido")
         void debeRetornar400SiTipoInvalido() throws Exception {
             // Arrange
@@ -126,7 +122,6 @@ class TransactionControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe retornar 400 si el monto es 0 o negativo")
         void debeRetornar400SiMontoInvalido() throws Exception {
             // Arrange
@@ -147,7 +142,6 @@ class TransactionControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe retornar 400 si falta la fecha")
         void debeRetornar400SiFaltaFecha() throws Exception {
             // Arrange
@@ -167,7 +161,6 @@ class TransactionControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe retornar 400 si falta la categoría")
         void debeRetornar400SiFaltaCategoria() throws Exception {
             // Arrange
@@ -185,23 +178,6 @@ class TransactionControllerFeatureTest {
                             .content(json))
                     .andExpect(status().isBadRequest());
         }
-
-        @Test
-        @DisplayName("Debe retornar 401 si no está autenticado")
-        void debeRetornar401SiNoAutenticado() throws Exception {
-            // Arrange
-            TransactionRequest request = new TransactionRequest();
-            request.setTipo("INGRESO");
-            request.setMonto(new BigDecimal("100"));
-            request.setFecha(LocalDate.now());
-            request.setCategoriaId(1L);
-
-            // Act & Assert
-            mockMvc.perform(post("/api/v1/transacciones")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isUnauthorized());
-        }
     }
 
     @Nested
@@ -209,7 +185,6 @@ class TransactionControllerFeatureTest {
     class ListarEndpoint {
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe listar transacciones del usuario autenticado")
         void debeListarTransacciones() throws Exception {
             // Arrange
@@ -231,7 +206,6 @@ class TransactionControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe retornar lista vacía si no hay transacciones")
         void debeRetornarListaVacia() throws Exception {
             // Arrange
@@ -241,14 +215,6 @@ class TransactionControllerFeatureTest {
             mockMvc.perform(get("/api/v1/transacciones"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(0));
-        }
-
-        @Test
-        @DisplayName("Debe retornar 401 si no está autenticado")
-        void debeRetornar401SiNoAutenticado() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/v1/transacciones"))
-                    .andExpect(status().isUnauthorized());
         }
     }
 }

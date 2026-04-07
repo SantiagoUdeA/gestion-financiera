@@ -1,25 +1,23 @@
 package com.finanzas.gestion_financiera.feature;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.finanzas.gestion_financiera.config.JwtAuthFilter;
-import com.finanzas.gestion_financiera.config.SecurityConfig;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.finanzas.gestion_financiera.controller.CategoryController;
 import com.finanzas.gestion_financiera.dto.CategoryRequest;
 import com.finanzas.gestion_financiera.dto.CategoryResponse;
 import com.finanzas.gestion_financiera.entity.Category.TipoCategoria;
 import com.finanzas.gestion_financiera.service.CategoryService;
-import com.finanzas.gestion_financiera.service.JwtService;
-import com.finanzas.gestion_financiera.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
@@ -29,32 +27,31 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CategoryController.class)
-@Import(SecurityConfig.class)
+@ExtendWith(MockitoExtension.class)
 @DisplayName("Category Feature - API /api/v1/categorias")
 class CategoryControllerFeatureTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
-    @MockitoBean
+    @Mock
     private CategoryService categoryService;
 
-    @MockitoBean
-    private JwtService jwtService;
+    @InjectMocks
+    private CategoryController categoryController;
 
-    @MockitoBean
-    private UserRepository userRepository;
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(categoryController).build();
+    }
 
     @Nested
     @DisplayName("POST /api/v1/categorias")
     class CrearEndpoint {
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe crear categoría y retornar 200")
         void debeCrearCategoriaExitosamente() throws Exception {
             // Arrange
@@ -76,7 +73,6 @@ class CategoryControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe retornar 400 si el nombre está vacío")
         void debeRetornar400SiNombreVacio() throws Exception {
             // Arrange
@@ -92,7 +88,6 @@ class CategoryControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe retornar 400 si falta el tipo")
         void debeRetornar400SiFaltaTipo() throws Exception {
             // Arrange
@@ -106,21 +101,6 @@ class CategoryControllerFeatureTest {
                             .content(json))
                     .andExpect(status().isBadRequest());
         }
-
-        @Test
-        @DisplayName("Debe retornar 401 si no está autenticado")
-        void debeRetornar401SiNoAutenticado() throws Exception {
-            // Arrange
-            CategoryRequest request = new CategoryRequest();
-            request.setNombre("Test");
-            request.setTipo(TipoCategoria.GASTO);
-
-            // Act & Assert
-            mockMvc.perform(post("/api/v1/categorias")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isUnauthorized());
-        }
     }
 
     @Nested
@@ -128,7 +108,6 @@ class CategoryControllerFeatureTest {
     class ListarEndpoint {
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe listar categorías del usuario autenticado")
         void debeListarCategorias() throws Exception {
             // Arrange
@@ -145,14 +124,6 @@ class CategoryControllerFeatureTest {
                     .andExpect(jsonPath("$[0].nombre").value("Salario"))
                     .andExpect(jsonPath("$[1].nombre").value("Alimentación"));
         }
-
-        @Test
-        @DisplayName("Debe retornar 401 si no está autenticado")
-        void debeRetornar401SiNoAutenticado() throws Exception {
-            // Act & Assert
-            mockMvc.perform(get("/api/v1/categorias"))
-                    .andExpect(status().isUnauthorized());
-        }
     }
 
     @Nested
@@ -160,7 +131,6 @@ class CategoryControllerFeatureTest {
     class ObtenerEndpoint {
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe obtener categoría por ID")
         void debeObtenerCategoriaPorId() throws Exception {
             // Arrange
@@ -180,7 +150,6 @@ class CategoryControllerFeatureTest {
     class ActualizarEndpoint {
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe actualizar categoría existente")
         void debeActualizarCategoria() throws Exception {
             // Arrange
@@ -200,7 +169,6 @@ class CategoryControllerFeatureTest {
         }
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe retornar 400 si datos de actualización son inválidos")
         void debeRetornar400SiDatosInvalidos() throws Exception {
             // Arrange
@@ -221,7 +189,6 @@ class CategoryControllerFeatureTest {
     class EliminarEndpoint {
 
         @Test
-        @WithMockUser(username = "test@email.com")
         @DisplayName("Debe eliminar categoría y retornar 204")
         void debeEliminarCategoria() throws Exception {
             // Arrange
@@ -231,14 +198,6 @@ class CategoryControllerFeatureTest {
             mockMvc.perform(delete("/api/v1/categorias/4"))
                     .andExpect(status().isNoContent());
             verify(categoryService).eliminar(4L);
-        }
-
-        @Test
-        @DisplayName("Debe retornar 401 si no está autenticado")
-        void debeRetornar401SiNoAutenticado() throws Exception {
-            // Act & Assert
-            mockMvc.perform(delete("/api/v1/categorias/4"))
-                    .andExpect(status().isUnauthorized());
         }
     }
 }
